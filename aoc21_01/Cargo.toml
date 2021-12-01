@@ -1,7 +1,8 @@
 [package]
 edition = "2021"
-name = "aoc21_01-2"
+name = "aoc21_01"
 version = "0.1.0"
 
 [dependencies]
-anyhow = "*"
+anyhow = "1.0.51"
+clap = "3.0.0-beta.5"

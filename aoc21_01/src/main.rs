@@ -3,15 +3,31 @@ use std::io::Read;
 use std::num::ParseIntError;
 use std::str::FromStr;
 use anyhow::Result;
+use clap::Parser;
+
+#[derive(Parser)]
+#[clap(version = "1.0", author = "Raniz")]
+struct Opts {
+    #[clap(short, long, default_value="input")]
+    input: String,
+    #[clap(short, long, default_value="0")]
+    window: usize
+}
 
 fn main() -> Result<()> {
+    let opts: Opts = Opts::parse();
     let mut input = String::new();
-    File::open("input")?.read_to_string(&mut input)?;
+    File::open(opts.input)?.read_to_string(&mut input)?;
     let numbers: Vec<i64> = input.split('\n')
         .map(i64::from_str)
         .collect::<std::result::Result<Vec<i64>, ParseIntError>>()?;
-    let windows = sum_sliding_window(&numbers, 3);
-    let increasing = count_increasing(&windows);
+    let numbers = if opts.window > 0 {
+        println!("Using window size {}", opts.window);
+        sum_sliding_window(&numbers, opts.window)
+    } else {
+        numbers
+    };
+    let increasing = count_increasing(&numbers);
     println!("Number of increasing measurements: {}", increasing);
     Ok(())
 }
@@ -43,6 +59,7 @@ fn count_increasing(numbers: &[i64]) -> i32 {
     increasing
 }
 
+#[cfg(test)]
 mod test {
     use crate::{count_increasing, sum_sliding_window};
 
