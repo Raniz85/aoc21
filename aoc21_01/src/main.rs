@@ -33,30 +33,15 @@ fn main() -> Result<()> {
 }
 
 fn sum_sliding_window(numbers: &[i64], size: usize) -> Vec<i64> {
-    let mut window = Vec::new();
-    let mut result = Vec::new();
-    for number in numbers {
-        window.push(number);
-        if window.len() == size {
-            result.push(window.iter().cloned().sum());
-            window.remove(0);
-        }
-    }
-    result
+    numbers.windows(size)
+        .map(|it| it.iter().sum())
+        .collect()
 }
 
-fn count_increasing(numbers: &[i64]) -> i32 {
-    let mut last: i64 = 0;
-    let mut increasing = 0;
-    let mut first = true;
-    for number in numbers {
-        if !first && *number > last {
-            increasing += 1;
-        }
-        first = false;
-        last = *number;
-    }
-    increasing
+fn count_increasing(numbers: &[i64]) -> usize {
+    numbers.windows(2)
+        .filter(|slice| slice[0] < slice[1])
+        .count()
 }
 
 #[cfg(test)]
