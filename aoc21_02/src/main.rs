@@ -132,8 +132,42 @@ fn navigate(instructions: &[&str], navigation: &mut dyn Navigation) -> Result<()
 mod test {
     use crate::{AimNavigation, NaiveNavigation, navigate, Navigation};
 
+    struct RecordingNavigation {
+        pub instructions: Vec<(String, i64)>,
+    }
+
+    impl Navigation for RecordingNavigation {
+        fn handle_forward(&mut self, amount: i64) {
+            self.instructions.push(("forward".to_owned(), amount))
+        }
+
+        fn handle_down(&mut self, amount: i64) {
+            self.instructions.push(("down".to_owned(), amount))
+        }
+
+        fn handle_up(&mut self, amount: i64) {
+            self.instructions.push(("up".to_owned(), amount))
+        }
+
+        fn vertical_position(&self) -> i64 {
+            0
+        }
+
+        fn horizontal_position(&self) -> i64 {
+            0
+        }
+    }
+
+    impl Default for RecordingNavigation {
+        fn default() -> Self {
+            RecordingNavigation {
+                instructions: Vec::new(),
+            }
+        }
+    }
+
     #[test]
-    fn test_navigate_naive() {
+    fn test_navigate() {
         let instructions = [
             "forward 5",
             "down 5",
@@ -142,26 +176,49 @@ mod test {
             "down 8",
             "forward 2",
         ];
-        let mut navigation = NaiveNavigation::default();
+        // Use NaiveNavigation to test that all instructions are read correctly
+        let mut navigation = RecordingNavigation::default();
+
         let result = navigate(&instructions, &mut navigation);
         assert!(result.is_ok());
+
+        let expected_instructions = vec![
+            ("forward".to_owned(), 5),
+            ("down".to_owned(), 5),
+            ("forward".to_owned(), 8),
+            ("up".to_owned(), 3),
+            ("down".to_owned(), 8),
+            ("forward".to_owned(), 2),
+        ];
+        assert_eq!(expected_instructions, navigation.instructions);
+    }
+
+    #[test]
+    fn test_navigate_naive() {
+        let mut navigation = NaiveNavigation::default();
+
+        navigation.handle_forward(5);
+        navigation.handle_down(5);
+        navigation.handle_forward(0);
+        navigation.handle_up(3);
+        navigation.handle_down(8);
+        navigation.handle_forward(2);
+
         assert_eq!(15, navigation.horizontal_position());
         assert_eq!(10, navigation.vertical_position());
     }
 
     #[test]
     fn test_navigate_aim() {
-        let instructions = [
-            "forward 5",
-            "down 5",
-            "forward 8",
-            "up 3",
-            "down 8",
-            "forward 2",
-        ];
         let mut navigation = AimNavigation::default();
-        let result = navigate(&instructions, &mut navigation);
-        assert!(result.is_ok());
+
+        navigation.handle_forward(5);
+        navigation.handle_down(5);
+        navigation.handle_forward(0);
+        navigation.handle_up(3);
+        navigation.handle_down(8);
+        navigation.handle_forward(2);
+
         assert_eq!(15, navigation.horizontal_position());
         assert_eq!(60, navigation.vertical_position());
     }
