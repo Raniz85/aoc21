@@ -9,6 +9,8 @@ use std::ops::Shr;
 struct Opts {
     #[clap(short, long, default_value = "input")]
     input: String,
+    #[clap(short, long)]
+    sieve: bool,
 }
 
 fn main() -> Result<()> {
@@ -17,10 +19,19 @@ fn main() -> Result<()> {
     File::open(opts.input)?.read_to_string(&mut input)?;
     let lines = input.split('\n').collect::<Vec<&str>>();
 
-    let (gamma, num_bits) = calc_gamma(&lines)?;
-    let epsilon = calc_epsilon(gamma, num_bits);
+    if opts.sieve {
+        let oxygen = sieve(&lines, 0, false)?;
+        dbg!(oxygen);
+        let co2 = sieve(&lines, 0, true)?;
+        dbg!(co2);
 
-    println!("gamma = {}, epsilon = {}, epsilon * gamma = {}", gamma, epsilon, epsilon * gamma);
+        println!("oxygen = {}, co2 = {}, oxygen * co2 = {}", oxygen, co2, oxygen * co2);
+    } else {
+        let (gamma, num_bits) = calc_gamma(&lines)?;
+        let epsilon = calc_epsilon(gamma, num_bits);
+
+        println!("gamma = {}, epsilon = {}, epsilon * gamma = {}", gamma, epsilon, epsilon * gamma);
+    }
 
     Ok(())
 }
@@ -64,9 +75,53 @@ fn calc_gamma(lines: &[&str]) -> Result<(u32, u8)> {
     Ok((gamma, num_bits))
 }
 
+fn sieve(lines: &[&str], index: usize, inverse: bool) -> Result<u32> {
+    let ones = lines.iter()
+        .filter(|line| &line[index..index+1] == "1")
+        .count();
+    let zeroes = lines.len() - ones;
+    let filter = if (inverse && ones < zeroes) || (!inverse && ones >= zeroes) {
+        "1"
+    } else {
+        "0"
+    };
+    let mut candidates = lines.to_vec();
+    candidates.retain(|line| &line[index..index+1] == filter);
+    match candidates.as_slice() {
+        [hit] => Ok(u32::from_str_radix(hit, 2)?),
+        hits => sieve(hits, index + 1, inverse),
+    }
+}
+
 #[cfg(test)]
 mod test {
-    use crate::{calc_epsilon, calc_gamma};
+    use crate::{calc_epsilon, calc_gamma, sieve};
+
+    #[test]
+    fn test_sieve() {
+        let input = [
+            "00100",
+            "11110",
+            "10110",
+            "10111",
+            "10101",
+            "01111",
+            "00111",
+            "11100",
+            "10000",
+            "11001",
+            "00010",
+            "01010",
+        ];
+
+        let result = sieve(&input, 0, false);
+        assert!(result.is_ok());
+        assert_eq!(23, result.unwrap());
+
+        let result = sieve(&input, 0, true);
+        assert!(result.is_ok());
+        assert_eq!(10, result.unwrap());
+    }
 
     #[test]
     fn test_calc_gamma() {
