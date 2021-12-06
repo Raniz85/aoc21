@@ -25,12 +25,22 @@ fn main() -> Result<()> {
         let co2 = sieve(&lines, 0, true)?;
         dbg!(co2);
 
-        println!("oxygen = {}, co2 = {}, oxygen * co2 = {}", oxygen, co2, oxygen * co2);
+        println!(
+            "oxygen = {}, co2 = {}, oxygen * co2 = {}",
+            oxygen,
+            co2,
+            oxygen * co2
+        );
     } else {
         let (gamma, num_bits) = calc_gamma(&lines)?;
         let epsilon = calc_epsilon(gamma, num_bits);
 
-        println!("gamma = {}, epsilon = {}, epsilon * gamma = {}", gamma, epsilon, epsilon * gamma);
+        println!(
+            "gamma = {}, epsilon = {}, epsilon * gamma = {}",
+            gamma,
+            epsilon,
+            epsilon * gamma
+        );
     }
 
     Ok(())
@@ -76,8 +86,9 @@ fn calc_gamma(lines: &[&str]) -> Result<(u32, u8)> {
 }
 
 fn sieve(lines: &[&str], index: usize, inverse: bool) -> Result<u32> {
-    let ones = lines.iter()
-        .filter(|line| &line[index..index+1] == "1")
+    let ones = lines
+        .iter()
+        .filter(|line| &line[index..index + 1] == "1")
         .count();
     let zeroes = lines.len() - ones;
     let filter = if (inverse && ones < zeroes) || (!inverse && ones >= zeroes) {
@@ -86,7 +97,7 @@ fn sieve(lines: &[&str], index: usize, inverse: bool) -> Result<u32> {
         "0"
     };
     let mut candidates = lines.to_vec();
-    candidates.retain(|line| &line[index..index+1] == filter);
+    candidates.retain(|line| &line[index..index + 1] == filter);
     match candidates.as_slice() {
         [hit] => Ok(u32::from_str_radix(hit, 2)?),
         hits => sieve(hits, index + 1, inverse),
@@ -100,18 +111,8 @@ mod test {
     #[test]
     fn test_sieve() {
         let input = [
-            "00100",
-            "11110",
-            "10110",
-            "10111",
-            "10101",
-            "01111",
-            "00111",
-            "11100",
-            "10000",
-            "11001",
-            "00010",
-            "01010",
+            "00100", "11110", "10110", "10111", "10101", "01111", "00111", "11100", "10000",
+            "11001", "00010", "01010",
         ];
 
         let result = sieve(&input, 0, false);
