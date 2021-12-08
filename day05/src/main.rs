@@ -11,6 +11,8 @@ use itertools::Either;
 struct Opts {
     #[clap(short, long, default_value = "input")]
     input: String,
+    #[clap(short, long)]
+    diagonal: bool,
 }
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
@@ -30,7 +32,7 @@ fn main() -> Result<()> {
     let lines = input.split('\n')
         .map(Line::parse)
         .collect::<Result<Vec<_>>>()?;
-    let twice_covered = get_covered_points(&lines).iter()
+    let twice_covered = get_covered_points(&lines, opts.diagonal).iter()
         .map(|(_, count)| count)
         .filter(|count| **count >= 2)
         .count();
@@ -39,9 +41,9 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn get_covered_points(lines: &[Line]) -> HashMap<Point, u32> {
+fn get_covered_points(lines: &[Line], diagonal: bool) -> HashMap<Point, u32> {
     lines.iter()
-        .filter_map(Line::get_points)
+        .filter_map(|line| line.get_points(diagonal))
         .flatten()
         .fold(HashMap::new(), |mut map, point| {
             match map.get_mut(&point) {
@@ -86,11 +88,7 @@ impl Line {
         }
     }
 
-    fn is_diagonal(&self) -> bool {
-        self.0.x != self.1.x && self.0.y != self.1.y
-    }
-
-    fn get_points(&self) -> Option<Vec<Point>> {
+    fn get_points(&self, diagonal: bool) -> Option<Vec<Point>> {
         if self.0.x == self.1.x {
             Some(get_range_inclusive(self.0.y, self.1.y)
                 .map(|y| Point::new(self.0.x, y))
@@ -98,6 +96,10 @@ impl Line {
         } else if self.0.y == self.1.y {
             Some(get_range_inclusive(self.0.x, self.1.x)
                 .map(|x| Point::new(x, self.0.y))
+                .collect())
+        } else if diagonal {
+            Some(get_range_inclusive(self.0.x, self.1.x).zip(get_range_inclusive(self.0.y, self.1.y))
+                .map(|(x, y)| Point::new(x, y))
                 .collect())
         } else {
             None
@@ -172,21 +174,10 @@ mod test {
         }
     }
 
-    #[parameterized(
-        horizontal = { Point::new(5, 0), Point::new(5, 8), false },
-        vertical = { Point::new(5, 0), Point::new(8, 0), false },
-        diagonal = { Point::new(5, 0), Point::new(0, 5), true },
-    )]
-    fn test_is_diagonal(a: Point, b: Point, diagonal: bool) {
-        let line = Line(a, b);
-
-        assert_eq!(diagonal, line.is_diagonal());
-    }
-
     #[test]
     fn test_get_line_points_horizontal() {
         let line = Line(Point::new(0, 5), Point::new(0, 8));
-        let points = line.get_points();
+        let points = line.get_points(false);
         assert!(points.is_some());
         assert_eq!(vec![
             Point::new(0, 5),
@@ -199,7 +190,7 @@ mod test {
     #[test]
     fn test_get_line_points_vertical() {
         let line = Line(Point::new(0, 5), Point::new(8, 5));
-        let points = line.get_points();
+        let points = line.get_points(false);
         assert!(points.is_some());
         assert_eq!(vec![
             Point::new(0, 5),
@@ -217,7 +208,7 @@ mod test {
     #[test]
     fn test_get_line_points_negative() {
         let line = Line(Point::new(2, 5), Point::new(0, 5));
-        let points = line.get_points();
+        let points = line.get_points(false);
         assert!(points.is_some());
         assert_eq!(vec![
             Point::new(2, 5),
@@ -226,15 +217,30 @@ mod test {
         ], points.unwrap());
     }
 
-    #[test]
-    fn test_get_line_points_diagonal() {
-        let line = Line(Point::new(0, 5), Point::new(5, 0));
-        let points = line.get_points();
-        assert!(points.is_none());
+    #[parameterized{
+    non_diagonal = { Line(Point::new(0, 5), Point::new(5, 0)), false, None },
+    diagonal = { Line(Point::new(0, 5), Point::new(5, 0)), true, Some(vec![
+            Point::new(0, 5),
+            Point::new(1, 4),
+            Point::new(2, 3),
+            Point::new(3, 2),
+            Point::new(4, 1),
+            Point::new(5, 0),
+        ])}
+    }]
+    fn test_get_line_points_diagonal(line: Line, diagonal: bool, expected: Option<Vec<Point>>) {
+        let points = line.get_points(diagonal);
+        match expected {
+            Some(expected) => {
+                assert!(points.is_some());
+                assert_eq!(expected, points.unwrap());
+            },
+            None => assert!(points.is_none()),
+        }
     }
 
     #[test]
-    fn test_get_covered_points() {
+    fn test_get_covered_points_non_diagonal() {
         let lines = [
             Line(Point::new(0, 5), Point::new(0, 2)),
             Line(Point::new(0, 5), Point::new(0, 1)),
@@ -252,7 +258,7 @@ mod test {
             Point::new(2, 5) => 1,
         };
 
-        let covered = get_covered_points(&lines);
+        let covered = get_covered_points(&lines, false);
         assert_eq!(expected, covered);
     }
 }
