@@ -1,0 +1,10 @@
+[package]
+edition = "2021"
+name = "day10"
+version = "0.1.0"
+
+[dependencies]
+anyhow = "1.0.51"
+clap = "3.0.0-beta.5"
+im = "15.0.0"
+yare = "1.0.1"
