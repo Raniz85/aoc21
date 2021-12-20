@@ -2,7 +2,6 @@ use anyhow::Result;
 use clap::Parser;
 use std::fs::File;
 use std::io::Read;
-use std::str::FromStr;
 
 #[derive(Parser)]
 #[clap(version = "1.0", author = "Raniz")]
