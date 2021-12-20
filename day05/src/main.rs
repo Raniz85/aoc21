@@ -1,10 +1,10 @@
-use std::collections::HashMap;
 use anyhow::{anyhow, Result};
 use clap::Parser;
+use itertools::Either;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::str::FromStr;
-use itertools::Either;
 
 #[derive(Parser)]
 #[clap(version = "1.0", author = "Raniz")]
@@ -29,10 +29,12 @@ fn main() -> Result<()> {
     let mut input = String::new();
     File::open(opts.input)?.read_to_string(&mut input)?;
 
-    let lines = input.split('\n')
+    let lines = input
+        .split('\n')
         .map(Line::parse)
         .collect::<Result<Vec<_>>>()?;
-    let twice_covered = get_covered_points(&lines, opts.diagonal).iter()
+    let twice_covered = get_covered_points(&lines, opts.diagonal)
+        .iter()
         .map(|(_, count)| count)
         .filter(|count| **count >= 2)
         .count();
@@ -42,7 +44,8 @@ fn main() -> Result<()> {
 }
 
 fn get_covered_points(lines: &[Line], diagonal: bool) -> HashMap<Point, u32> {
-    lines.iter()
+    lines
+        .iter()
         .filter_map(|line| line.get_points(diagonal))
         .flatten()
         .fold(HashMap::new(), |mut map, point| {
@@ -60,14 +63,12 @@ fn get_covered_points(lines: &[Line], diagonal: bool) -> HashMap<Point, u32> {
 
 impl Point {
     fn new(x: u32, y: u32) -> Point {
-        Point {
-            x,
-            y
-        }
+        Point { x, y }
     }
 
     fn parse(s: &str) -> Result<Point> {
-        let coords = s.split(',')
+        let coords = s
+            .split(',')
             .map(|p| p.trim())
             .map(|n| Ok(u32::from_str(n)?))
             .collect::<Result<Vec<_>>>()?;
@@ -80,8 +81,7 @@ impl Point {
 
 impl Line {
     fn parse(s: &str) -> Result<Line> {
-        let parts = s.split("->")
-            .collect::<Vec<_>>();
+        let parts = s.split("->").collect::<Vec<_>>();
         match parts.as_slice() {
             [a, b] => Ok(Line(Point::parse(a)?, Point::parse(b)?)),
             _ => Err(anyhow!("Invalid line {}", s)),
@@ -90,24 +90,31 @@ impl Line {
 
     fn get_points(&self, diagonal: bool) -> Option<Vec<Point>> {
         if self.0.x == self.1.x {
-            Some(get_range_inclusive(self.0.y, self.1.y)
-                .map(|y| Point::new(self.0.x, y))
-                .collect())
+            Some(
+                get_range_inclusive(self.0.y, self.1.y)
+                    .map(|y| Point::new(self.0.x, y))
+                    .collect(),
+            )
         } else if self.0.y == self.1.y {
-            Some(get_range_inclusive(self.0.x, self.1.x)
-                .map(|x| Point::new(x, self.0.y))
-                .collect())
+            Some(
+                get_range_inclusive(self.0.x, self.1.x)
+                    .map(|x| Point::new(x, self.0.y))
+                    .collect(),
+            )
         } else if diagonal {
-            Some(get_range_inclusive(self.0.x, self.1.x).zip(get_range_inclusive(self.0.y, self.1.y))
-                .map(|(x, y)| Point::new(x, y))
-                .collect())
+            Some(
+                get_range_inclusive(self.0.x, self.1.x)
+                    .zip(get_range_inclusive(self.0.y, self.1.y))
+                    .map(|(x, y)| Point::new(x, y))
+                    .collect(),
+            )
         } else {
             None
         }
     }
 }
 
-fn get_range_inclusive(a: u32, b: u32) -> impl Iterator<Item=u32> {
+fn get_range_inclusive(a: u32, b: u32) -> impl Iterator<Item = u32> {
     if b >= a {
         Either::Left(a..=b)
     } else {
@@ -117,18 +124,17 @@ fn get_range_inclusive(a: u32, b: u32) -> impl Iterator<Item=u32> {
 
 #[cfg(test)]
 mod test {
-    use yare::parameterized;
-    use crate::{get_range_inclusive, get_covered_points, Line, Point};
+    use crate::{get_covered_points, get_range_inclusive, Line, Point};
     use maplit::hashmap;
+    use yare::parameterized;
 
     #[parameterized{
         forward = {0, 2, vec![0, 1, 2]},
         reverse = {2, 0, vec![2, 1, 0]},
         single = {0, 0, vec![0]},
     }]
-    fn test_get_range_inclusive(a: u32, b:u32, expected: Vec<u32>) {
-        let actual = get_range_inclusive(a, b)
-            .collect::<Vec<_>>();
+    fn test_get_range_inclusive(a: u32, b: u32, expected: Vec<u32>) {
+        let actual = get_range_inclusive(a, b).collect::<Vec<_>>();
         assert_eq!(expected, actual);
     }
 
@@ -146,8 +152,11 @@ mod test {
         match expected {
             Some((ax, ay, bx, by)) => {
                 assert!(result.is_ok());
-                assert_eq!(Line(Point::new(ax, ay), Point::new(bx, by)), result.unwrap());
-            },
+                assert_eq!(
+                    Line(Point::new(ax, ay), Point::new(bx, by)),
+                    result.unwrap()
+                );
+            }
             None => assert!(result.is_err()),
         }
     }
@@ -169,7 +178,7 @@ mod test {
             Some((x, y)) => {
                 assert!(result.is_ok());
                 assert_eq!(Point::new(x, y), result.unwrap());
-            },
+            }
             None => assert!(result.is_err()),
         }
     }
@@ -179,12 +188,15 @@ mod test {
         let line = Line(Point::new(0, 5), Point::new(0, 8));
         let points = line.get_points(false);
         assert!(points.is_some());
-        assert_eq!(vec![
-            Point::new(0, 5),
-            Point::new(0, 6),
-            Point::new(0, 7),
-            Point::new(0, 8),
-        ], points.unwrap());
+        assert_eq!(
+            vec![
+                Point::new(0, 5),
+                Point::new(0, 6),
+                Point::new(0, 7),
+                Point::new(0, 8),
+            ],
+            points.unwrap()
+        );
     }
 
     #[test]
@@ -192,17 +204,20 @@ mod test {
         let line = Line(Point::new(0, 5), Point::new(8, 5));
         let points = line.get_points(false);
         assert!(points.is_some());
-        assert_eq!(vec![
-            Point::new(0, 5),
-            Point::new(1, 5),
-            Point::new(2, 5),
-            Point::new(3, 5),
-            Point::new(4, 5),
-            Point::new(5, 5),
-            Point::new(6, 5),
-            Point::new(7, 5),
-            Point::new(8, 5),
-        ], points.unwrap());
+        assert_eq!(
+            vec![
+                Point::new(0, 5),
+                Point::new(1, 5),
+                Point::new(2, 5),
+                Point::new(3, 5),
+                Point::new(4, 5),
+                Point::new(5, 5),
+                Point::new(6, 5),
+                Point::new(7, 5),
+                Point::new(8, 5),
+            ],
+            points.unwrap()
+        );
     }
 
     #[test]
@@ -210,11 +225,10 @@ mod test {
         let line = Line(Point::new(2, 5), Point::new(0, 5));
         let points = line.get_points(false);
         assert!(points.is_some());
-        assert_eq!(vec![
-            Point::new(2, 5),
-            Point::new(1, 5),
-            Point::new(0, 5),
-        ], points.unwrap());
+        assert_eq!(
+            vec![Point::new(2, 5), Point::new(1, 5), Point::new(0, 5),],
+            points.unwrap()
+        );
     }
 
     #[parameterized{
@@ -234,7 +248,7 @@ mod test {
             Some(expected) => {
                 assert!(points.is_some());
                 assert_eq!(expected, points.unwrap());
-            },
+            }
             None => assert!(points.is_none()),
         }
     }
@@ -248,7 +262,7 @@ mod test {
             Line(Point::new(0, 3), Point::new(3, 0)), // This shouldn't contribute
         ];
 
-        let expected = hashmap!{
+        let expected = hashmap! {
             Point::new(0, 5) => 3,
             Point::new(0, 4) => 2,
             Point::new(0, 3) => 2,

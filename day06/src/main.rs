@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use anyhow::Result;
 use clap::Parser;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::str::FromStr;
@@ -18,7 +18,8 @@ fn main() -> Result<()> {
     let opts: Opts = Opts::parse();
     let mut input = String::new();
     File::open(opts.input)?.read_to_string(&mut input)?;
-    let starts = input.split(",")
+    let starts = input
+        .split(",")
         .map(|n| Ok(u32::from_str(n.trim())?))
         .collect::<Result<Vec<_>>>()?;
     let fish = count_fishes(&starts, opts.days);
@@ -27,15 +28,14 @@ fn main() -> Result<()> {
 }
 
 fn count_fishes(starts: &[u32], days: u32) -> u64 {
-    starts.iter()
-        .map(|s| count_fish(*s, days))
-        .sum()
+    starts.iter().map(|s| count_fish(*s, days)).sum()
 }
 
 fn count_fish(start: u32, days: u32) -> u64 {
-    let mut production_days = (start..days).step_by(7)
+    let mut production_days = (start..days)
+        .step_by(7)
         .map(|day| (day, 1))
-        .collect::<HashMap<_,_>>();
+        .collect::<HashMap<_, _>>();
     let mut sum = 1;
     for day in (start..days) {
         if let Some(amount) = production_days.get(&day) {
@@ -44,10 +44,10 @@ fn count_fish(start: u32, days: u32) -> u64 {
                 match production_days.get_mut(&production_day) {
                     Some(existing_amount) => {
                         *existing_amount += amount;
-                    },
+                    }
                     None => {
                         production_days.insert(production_day, amount);
-                    },
+                    }
                 }
             }
             sum += amount;
@@ -58,8 +58,8 @@ fn count_fish(start: u32, days: u32) -> u64 {
 
 #[cfg(test)]
 mod test {
-    use yare::parameterized;
     use crate::{count_fish, count_fishes};
+    use yare::parameterized;
 
     #[parameterized{
         short1 = { 0, 8, 3},
@@ -79,9 +79,8 @@ mod test {
         days80 = { 80, 5934 },
     }]
     fn test_count_fishes(days: u32, expected: u32) {
-        let starts = [3,4,3,1,2];
+        let starts = [3, 4, 3, 1, 2];
 
         assert_eq!(expected, count_fishes(&starts, days));
     }
-
 }

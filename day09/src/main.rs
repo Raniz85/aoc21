@@ -42,8 +42,7 @@ impl<const N: usize, const M: usize> Map<N, M> {
     fn parse<'a>(lines: impl Iterator<Item = &'a str>) -> Result<Map<N, M>> {
         Ok(Map(lines
             .map(|line| -> Result<[u8; M]> {
-                line
-                    .chars()
+                line.chars()
                     .map(|c| match c {
                         '0'..='9' => Ok(c.to_digit(10).unwrap() as u8),
                         _ => Err(anyhow!("Invalid integer {}", c)),
